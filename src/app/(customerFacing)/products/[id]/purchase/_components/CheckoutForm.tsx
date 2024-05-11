@@ -106,7 +106,9 @@ function Form({
       .then(({ error }) => {
         if (error.type === "card_error" || error.type === "validation_error") {
           setErrorMessage(error.message)
+          
         } else {
+          console.log(error.message)
           setErrorMessage("An unknown error occurred")
         }
       })

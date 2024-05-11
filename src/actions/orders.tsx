@@ -22,6 +22,7 @@ export async function emailOrderHistory(
     where: { email: result.data },
     select: {
       email: true,
+      
       orders: {
         select: {
           pricePaidInCents: true,
