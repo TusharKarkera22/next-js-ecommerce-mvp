@@ -70,52 +70,58 @@ export async function updateProduct(
   prevState: unknown,
   formData: FormData
 ) {
-  const result = editSchema.safeParse(Object.fromEntries(formData.entries()))
-  console.log("Validation Result:", result)
-  if (result.success === false) {
-    return result.error.formErrors.fieldErrors
+  try {
+    const result = editSchema.safeParse(Object.fromEntries(formData.entries()))
+    console.log("Validation Result:", result)
+    if (result.success === false) {
+      return result.error.formErrors.fieldErrors
+    }
+
+    const data = result.data
+    const product = await db.product.findUnique({ where: { id } })
+    console.log("Existing Product:", product)
+
+    if (product == null) return notFound()
+
+    let filePath = product.filePath
+    if (data.file != null && data.file.size > 0) {
+      await fs.unlink(product.filePath)
+      filePath = `products/${crypto.randomUUID()}-${data.file.name}`
+      await fs.writeFile(filePath, Buffer.from(await data.file.arrayBuffer()))
+    }
+
+    let imagePath = product.imagePath
+    if (data.image != null && data.image.size > 0) {
+      await fs.unlink(`public${product.imagePath}`)
+      imagePath = `/products/${crypto.randomUUID()}-${data.image.name}`
+      await fs.writeFile(
+        `public${imagePath}`,
+        Buffer.from(await data.image.arrayBuffer())
+      )
+    }
+
+    await db.product.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+        priceInCents: data.priceInCents,
+        filePath,
+        imagePath,
+      },
+    })
+    console.log("Product Updated")
+
+    revalidatePath("/")
+    revalidatePath("/products")
+
+    redirect("/admin/products")
+  } catch (error) {
+    console.error("Error in updateProduct:", error)
+    throw error
   }
-
-  const data = result.data
-  const product = await db.product.findUnique({ where: { id } })
-  console.log("Existing Product:", product)
-
-  if (product == null) return notFound()
-
-  let filePath = product.filePath
-  if (data.file != null && data.file.size > 0) {
-    await fs.unlink(product.filePath)
-    filePath = `products/${crypto.randomUUID()}-${data.file.name}`
-    await fs.writeFile(filePath, Buffer.from(await data.file.arrayBuffer()))
-  }
-
-  let imagePath = product.imagePath
-  if (data.image != null && data.image.size > 0) {
-    await fs.unlink(`public${product.imagePath}`)
-    imagePath = `/products/${crypto.randomUUID()}-${data.image.name}`
-    await fs.writeFile(
-      `public${imagePath}`,
-      Buffer.from(await data.image.arrayBuffer())
-    )
-  }
-
-  await db.product.update({
-    where: { id },
-    data: {
-      name: data.name,
-      description: data.description,
-      priceInCents: data.priceInCents,
-      filePath,
-      imagePath,
-    },
-  })
-  console.log("Product Updated")
-
-  revalidatePath("/")
-  revalidatePath("/products")
-
-  redirect("/admin/products")
 }
+
 
 export async function toggleProductAvailability(
   id: string,
