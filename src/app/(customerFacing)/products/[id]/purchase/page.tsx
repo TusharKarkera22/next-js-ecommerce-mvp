@@ -17,20 +17,21 @@ export default async function PurchasePage({
   if (product == null) return notFound()
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: product.priceInCents,
-    currency: "USD",
-    shipping: {
-      address: {
-        line1: 'dd',
-        city: 'City Name',
-        state: 'State Name',
-        postal_code: 'Postal Code',
-        country: 'Country Code',
-      },
-      name:'jhon dow',
-
-
+     description: 'Software development services',
+  shipping: {
+    name: 'Jenny Rosen',
+    address: {
+      line1: '510 Townsend St',
+      postal_code: '98140',
+      city: 'San Francisco',
+      state: 'CA',
+      country: 'US',
     },
+  },
+  amount: product.priceInCents,
+  currency: 'usd',
+  payment_method_types: ['card'],
+    
     metadata: { productId: product.id },
   })
 
